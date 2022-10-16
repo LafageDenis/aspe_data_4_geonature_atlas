@@ -1,4 +1,18 @@
+# Load libraries
+
 library(hubeau)
+library(dplyr)
+library(readr)
+
+# Load Sandre referenciel
+
+download.file('https://api.sandre.eaufrance.fr/referentiels/v1/apt.csv?compress=FALSE',
+              destfile = 'ref_sandre.csv')
+
+ref_sandre <- read_csv2('./ref_sandre.csv')
+ref_fish_sandre <- ref_sandre[-1,] %>% 
+  filter(StAppelTaxon == 'Validé' & LbThemeTaxon == 'Poissons' &
+           LbNiveauTaxonomique == 'Espèce')
 
 # Get the query parameters for the requested API/endpoint
 list_params(api = "poisson",
