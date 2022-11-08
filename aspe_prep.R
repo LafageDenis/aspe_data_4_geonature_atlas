@@ -18,10 +18,13 @@ list_params(api = "poisson",
 fields <- paste("code_operation",
                 "date_operation",
                 "code_commune",
-                "libelle_point_prelevement_aspe",
                 "libelle_station",
+                "code_departement",
+                "code_station",
+                "code_lot",
                 "effectif_lot",
                 "code_alternatif_taxon",
+                "nom_latin_taxon",
                 "code_epsg_projection_point_prelevement",
                 "coordonnee_x_point_prelevement",
                 "coordonnee_y_point_prelevement",
@@ -72,15 +75,43 @@ for (i in dpt) { #looping through the list of departements
       next # So we skip it !
     }
     tmp <- tmp %>% 
-      group_by_at(vars(code_operation, date_operation, code_commune, 
-                     libelle_point_prelevement_aspe, libelle_station, 
-                     effectif_lot, code_alternatif_taxon, code_epsg_projection_point_prelevement,
-                     coordonnee_x_point_prelevement, coordonnee_y_point_prelevement, protocole_peche)) %>%
-      summarise(nb_individals = sum(effectif_lot))
+      group_by_at(vars(code_operation, date_operation, code_departement, code_commune, code_station,
+                     libelle_station, code_lot, code_alternatif_taxon, nom_latin_taxon,
+                     code_epsg_projection_point_prelevement, coordonnee_x_point_prelevement, 
+                     coordonnee_y_point_prelevement, protocole_peche)) %>%
+      summarise(denbrMin = sum(effectif_lot))
     fish_pdl = bind_rows(fish_pdl, tmp)
   }}
 
-
+aspe2import <- fish_pdl %>% 
+  filter(code_epsg_projection_point_prelevement == '2154' & denbrMin > 0) %>% 
+  left_join(code_espece, by = c("code_alternatif_taxon" = "esp_code_alternatif")) %>% 
+  mutate(statObs = "Pr",
+         dateFin = date_operation,
+         denbrMax = denbrMin,
+         objDenbr = "IND",
+         ocStatBio = 2,
+         ocNat = 1,
+         ocEtatBio = 2,
+         statSource = "Te",
+         dispColl = "Observation",
+         obsId = "Anonyme",
+         detId = "Anonyme",
+         obsNomOrg = "OFB",
+         detNomOrg = "OFB",
+         orgGestDat = "OFB",
+         vTAXREF = "v.14.0",) %>% 
+  rename(idOrigine = code_lot,
+         cdDep = code_departement,
+         cdCommune = code_commune,
+         nomLieu = libelle_station,
+         xL93 = coordonnee_x_point_prelevement,
+         yL93 = coordonnee_y_point_prelevement,
+         cdNom = esp_code_taxref,
+         nomCite = nom_latin_taxon,
+         dateDebut = date_operation)
+         
+write_csv(aspe2import, file = "./221108_aspe2import.csv")
 
 
 
